@@ -80,7 +80,7 @@ public class Program
             options.UseSqlServer(builder.Configuration.GetConnectionString("Dsw2025TpiEntities"));
         });
 
-        // --- AQUÍ ESTÁ EL CAMBIO ---
+        // --- AQUï¿½ ESTï¿½ EL CAMBIO ---
         builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
         {
             options.Password = new PasswordOptions
@@ -152,6 +152,12 @@ public class Program
 
             try
             {
+                var authContext = services.GetRequiredService<AuthenticateContext>();
+                authContext.Database.Migrate();
+
+                var context = services.GetRequiredService<Dsw2025TpiContext>();
+                context.Database.Migrate();
+
                 var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
                 var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
 
@@ -225,8 +231,8 @@ public class Program
                 {
                     Console.WriteLine($" Archivo 'admins.json' no encontrado en: {jsonFilePath}");
                 }
-                var context = services.GetRequiredService<Dsw2025TpiContext>();
-                context.Seedwork<Customer>("customers.json");
+                var adminContext = services.GetRequiredService<Dsw2025TpiContext>();
+                adminContext.Seedwork<Customer>("customers.json");
             }
             catch (Exception ex)
             {
@@ -241,7 +247,10 @@ public class Program
             app.UseSwaggerUI();
         }
 
-        app.UseHttpsRedirection();
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseHttpsRedirection();
+        }
         app.UseCors("AllowFrontend");
 
         app.UseMiddleware<ExceptionHandlingMiddleware>();
