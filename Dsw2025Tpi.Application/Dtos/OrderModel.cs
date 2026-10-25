@@ -19,19 +19,19 @@ public record OrderResponse(
     decimal TotalAmount,
     OrderStatus Status,
     List<OrderItemResponse> Items,
-    string? ClientName 
+    string? ClientName
 );
 
 
 public record OrderResponsePagination(
-    List<OrderResponse> Items, 
-    int Total                  
+    List<OrderResponse> Items,
+    int Total
 );
 
 
 public record OrderFilter(
-    string? Search,      
-    string? Status,      
-    int? PageNumber,     
-    int? PageSize        
+    string? Search,
+    string? Status,
+    int? PageNumber,
+    int? PageSize
 );

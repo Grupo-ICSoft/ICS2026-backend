@@ -27,8 +27,8 @@ public class ProductsController : ControllerBase
     public async Task<IActionResult> GetProducts([FromQuery] ProductModel.FilterProduct filter)
     {
         _logger.LogInformation("Recibida solicitud GET /api/products para obtener todos los productos.");
-       
-        var result =  await _service.GetProducts(filter);
+
+        var result = await _service.GetProducts(filter);
 
         if (result.ProductItems == null || !result.ProductItems.Any())
         {
@@ -39,8 +39,8 @@ public class ProductsController : ControllerBase
     }
 
 
-    [HttpGet("admin")] 
-    [Authorize(Roles = "Admin")] 
+    [HttpGet("admin")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetAuthProducts([FromQuery] ProductModel.FilterProduct request)
     {
         _logger.LogInformation("Admin solicitando productos (incluyendo inactivos).");
@@ -49,7 +49,7 @@ public class ProductsController : ControllerBase
 
         if (result.ProductItems == null || !result.ProductItems.Any())
         {
-            
+
             Response.Headers.Append("X-Message", "There are no products found");
             return NoContent();
         }
