@@ -241,7 +241,7 @@ public class Program
             }
         }
         // Configure the HTTP request pipeline.
-        
+
         // Habilitar Swagger en todos los entornos
         app.UseSwagger();
         app.UseSwaggerUI();
