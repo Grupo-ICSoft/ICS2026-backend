@@ -8,12 +8,12 @@ namespace Dsw2025Tpi.Application.Dtos
     int Quantity
 );
 
-        public record OrderItemResponse(
-            Guid ProductId,
-            string ProductName,
-            int Quantity,
-            decimal UnitPrice,
-            decimal Subtotal
-        );
- }
+    public record OrderItemResponse(
+        Guid ProductId,
+        string ProductName,
+        int Quantity,
+        decimal UnitPrice,
+        decimal Subtotal
+    );
+}
 

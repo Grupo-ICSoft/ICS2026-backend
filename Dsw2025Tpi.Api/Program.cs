@@ -37,11 +37,11 @@ public class Program
 
         builder.Services.AddControllers().AddJsonOptions(opt =>
         {
-            opt.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()); 
+            opt.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
 
         });
 
-        
+
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen(o =>
         {
@@ -88,11 +88,11 @@ public class Program
                 RequiredLength = 8
             };
 
-          
+
         })
         .AddEntityFrameworkStores<AuthenticateContext>()
         .AddDefaultTokenProviders()
-        .AddErrorDescriber<SpanishIdentityErrorDescriber>(); 
+        .AddErrorDescriber<SpanishIdentityErrorDescriber>();
 
 
         var jwtConfig = builder.Configuration.GetSection("Jwt");
@@ -136,7 +136,7 @@ public class Program
             options.AddPolicy("AllowFrontend",
                 policy =>
                 {
-                    policy.WithOrigins("http://localhost:5173") 
+                    policy.WithOrigins("http://localhost:5173")
                           .AllowAnyHeader()
                           .AllowAnyMethod()
                           .AllowCredentials();

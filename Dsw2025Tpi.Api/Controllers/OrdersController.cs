@@ -27,7 +27,7 @@ public class OrdersController : ControllerBase
         return CreatedAtAction(nameof(GetOrderById), new { id = created.OrderId }, created);
     }
 
-        [HttpGet]
+    [HttpGet]
     public async Task<IActionResult> GetOrders([FromQuery] OrderFilter filter)
     {
         _logger.LogInformation("Recibida solicitud GET /api/orders con filtros.");

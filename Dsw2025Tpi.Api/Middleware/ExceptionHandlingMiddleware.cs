@@ -24,7 +24,7 @@ namespace Dsw2025Tpi.Api.NewFolder
             }
             catch (Exception ex)
             {
-                
+
                 _logger.LogError(ex, "Se capturó una excepción no controlada: {ExceptionType}", ex.GetType().Name);
                 await HandleExceptionAsync(context, ex);
             }
@@ -44,7 +44,7 @@ namespace Dsw2025Tpi.Api.NewFolder
                      DuplicatedEntityException or
                      ArgumentException or
                      InsufficientStockException or
-                     ArgumentNullException: 
+                     ArgumentNullException:
                     status = HttpStatusCode.BadRequest;
                     message = exception.Message;
                     break;
@@ -56,14 +56,14 @@ namespace Dsw2025Tpi.Api.NewFolder
                     status = HttpStatusCode.NotFound;
                     message = exception.Message;
                     break;
-                    
+
                 // errores de autenticación/autorización
                 case UnauthorizedAccessException:
                     status = HttpStatusCode.Forbidden; // 403 Forbidden
                     message = "No tienes permiso para acceder a este recurso.";
                     break;
 
-               
+
 
                 // Manejador por defecto 
                 default:
@@ -72,7 +72,7 @@ namespace Dsw2025Tpi.Api.NewFolder
                     break;
             }
 
-            var result = JsonSerializer.Serialize(new ApiError("" ,message));
+            var result = JsonSerializer.Serialize(new ApiError("", message));
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = (int)status;
             return context.Response.WriteAsync(result);

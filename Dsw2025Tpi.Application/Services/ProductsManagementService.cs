@@ -92,7 +92,7 @@ namespace Dsw2025Tpi.Application.Services
         {
             _logger.LogInformation("Consulta de productos. IncludeInactive: {IncludeInactive}, StatusFilter: {Status}", includeInactive, filter.Status);
 
-            
+
             bool? isActiveFilter = null;
             if (!string.IsNullOrEmpty(filter.Status) && bool.TryParse(filter.Status, out bool parsedStatus))
             {
@@ -100,17 +100,17 @@ namespace Dsw2025Tpi.Application.Services
             }
 
             var filteredProducts = await _repository.GetFiltered<Product>(p =>
-                
+
                 (includeInactive || p.IsActive)
 
                 &&
 
-                
+
                 (!isActiveFilter.HasValue || p.IsActive == isActiveFilter.Value)
 
                 &&
 
-                
+
                 (string.IsNullOrEmpty(filter.Search)
                     || (p.Name != null && p.Name.Contains(filter.Search))
                     || (p.InternalCode != null && p.InternalCode.Contains(filter.Search))
@@ -163,15 +163,15 @@ namespace Dsw2025Tpi.Application.Services
                 throw new InvalidDataException("La cantidad de stock debe ser mayor o igual a cero");
             }
             var mismoSku = await _repository.First<Product>(
-                p => p.Sku == request.Sku && p.Id != id 
+                p => p.Sku == request.Sku && p.Id != id
             );
             if (mismoSku != null)
             {
                 _logger.LogError("Se intento actualizar un producto con un SKU ya existente el SKU ingresado fue: {SKU}", request.Sku);
                 throw new DuplicatedEntityException($"Ya existe otro producto con SKU='{request.Sku}'.");
             }
-            
-            existing.Sku = request.Sku; 
+
+            existing.Sku = request.Sku;
             existing.InternalCode = request.InternalCode;
             existing.Name = request.Name;
             existing.Description = request.Description;
@@ -184,7 +184,7 @@ namespace Dsw2025Tpi.Application.Services
 
             return new ProductModel.ResponseProduct(
                 updated.Id,
-                updated.Sku, 
+                updated.Sku,
                 updated.InternalCode,
                 updated.Name,
                 updated.Description,

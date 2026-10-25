@@ -124,7 +124,7 @@ namespace Dsw2025Tpi.Api.Controllers
 
             // --- CAMBIO IMPORTANTE AQUÍ ---
 
-            
+
             var createdCustomer = await _repository.First<Customer>(c => c.Email == model.Email);
 
             // 2. Ahora sí generamos el token PASÁNDOLE EL ID (argumento 3)
