@@ -77,10 +77,12 @@ public class Program
 
         builder.Services.AddDbContext<AuthenticateContext>(options =>
         {
-            options.UseSqlServer(builder.Configuration.GetConnectionString("Dsw2025TpiEntities"));
+            options.UseSqlServer(
+                builder.Configuration.GetConnectionString("Dsw2025TpiEntities"),
+                sqlOptions => sqlOptions.EnableRetryOnFailure());
         });
 
-        // --- AQU� EST� EL CAMBIO ---
+        // --- AQU EST EL CAMBIO ---
         builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
         {
             options.Password = new PasswordOptions
@@ -120,9 +122,10 @@ public class Program
 
 
         builder.Services.AddDbContext<Dsw2025TpiContext>(options =>
-        {
-            options.UseSqlServer(builder.Configuration.GetConnectionString("Dsw2025TpiEntities"));
-        });
+         {
+             options.UseSqlServer(builder.Configuration.GetConnectionString("Dsw2025TpiEntities"), sqlOptions => sqlOptions.EnableRetryOnFailure());
+         });
+
 
         builder.Services.AddSingleton<JwtTokenService>();
         builder.Services.AddAuthorization();
