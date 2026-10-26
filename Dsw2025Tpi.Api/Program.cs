@@ -77,7 +77,9 @@ public class Program
 
         builder.Services.AddDbContext<AuthenticateContext>(options =>
         {
-            options.UseSqlServer(builder.Configuration.GetConnectionString("Dsw2025TpiEntities"), sqlServerOptionAction: sqlOptions => sqlOptions.EnableRetryOnFailure());
+            options.UseSqlServer(
+                builder.Configuration.GetConnectionString("Dsw2025TpiEntities"),
+                sqlOptions => sqlOptions.EnableRetryOnFailure());
         });
 
         // --- AQU EST EL CAMBIO ---
