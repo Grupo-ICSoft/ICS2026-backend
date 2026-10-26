@@ -25,13 +25,13 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Restaurar dependencias
-        run: dotnet restore Dsw2025Tpi
+        run: dotnet restore Dsw2025Tpi.sln
 
       - name: Verificar Formato (Linter)
-        run: dotnet format Dsw2025Tpi --verify-no-changes
+        run: dotnet format Dsw2025Tpi.sln --verify-no-changes
 
       - name: Compilar en Release
-        run: dotnet build Dsw2025Tpi -c Release --no-restore
+        run: dotnet build Dsw2025Tpi.sln -c Release --no-restore
 
   docker-and-deploy:
     name: Docker y Deploy
