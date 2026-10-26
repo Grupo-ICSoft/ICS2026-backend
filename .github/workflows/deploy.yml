@@ -9,7 +9,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build-and-lint:
@@ -46,6 +45,10 @@ jobs:
       - name: Checkout del código
         uses: actions/checkout@v4
 
+      - name: Formatear nombre del repositorio a minúsculas
+        run: |
+          echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
       - name: Autenticar en GHCR
         uses: docker/login-action@v3
         with:
@@ -74,6 +77,6 @@ jobs:
       - name: Desplegar en Azure App Service
         uses: azure/webapps-deploy@v3
         with:
-          app-name: ${{ secrets.APP_SERVICE_NAME }}
+          app-name: ${{ secrets.APP_SERVICE_NAME || vars.AZURE_WEBAPP_NAME || 'ics2026-api' }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
