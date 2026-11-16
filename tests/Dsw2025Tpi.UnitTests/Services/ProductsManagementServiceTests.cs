@@ -10,6 +10,8 @@ using System;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Xunit;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Dsw2025Tpi.UnitTests.Services;
 
@@ -165,4 +167,188 @@ public class ProductsManagementServiceTests
             Times.Never
         );
     }
+
+
+    [Fact]
+    public async Task GetProducts_WhenIncludeInactiveIsFalse_ReturnsOnlyActiveProducts()
+    {
+        // ARRANGE: productos activos e inactivos
+        var products = new List<Product>
+    {
+        new Product("SKU-001", "Mouse Gamer", 15000m, 10),
+        new Product("SKU-002", "Teclado Mecánico", 25000m, 5),
+        new Product("SKU-003", "Monitor", 100000m, 3)
+        {
+            IsActive = false
+        }
+    };
+
+        var repositoryMock = new Mock<IRepository>();
+
+        repositoryMock
+            .Setup(r => r.GetFiltered<Product>(
+                It.IsAny<Expression<Func<Product, bool>>>(),
+                It.IsAny<string[]>()))
+            .ReturnsAsync((
+                Expression<Func<Product, bool>> predicate,
+                string[] include) =>
+                products.Where(predicate.Compile()).ToList());
+
+        var service = new ProductsManagementService(
+            repositoryMock.Object,
+            NullLogger<ProductsManagementService>.Instance
+        );
+
+        var filter = new ProductModel.FilterProduct(
+            Status: null,
+            Search: null,
+            PageNumber: 1,
+            PageSize: 10
+        );
+
+        // ACT: consultar sin incluir productos inactivos
+        var result = await service.GetProducts(
+            filter,
+            includeInactive: false
+        );
+
+        // ASSERT: comprobar que sólo devuelve activos
+        Assert.Equal(2, result.ProductItems.Count);
+        Assert.Equal(2, result.Total);
+        Assert.All(result.ProductItems, p => Assert.True(p.IsActive));
+
+        repositoryMock.Verify(
+            r => r.GetFiltered<Product>(
+                It.IsAny<Expression<Func<Product, bool>>>(),
+                It.IsAny<string[]>()),
+            Times.Once
+        );
+    }
+
+
+    [Fact]
+    public async Task GetProducts_WithPaginationFilter_AppliesSkipAndTakeCorrectly()
+    {
+        // ARRANGE: preparar 15 productos activos
+        var products = Enumerable.Range(1, 15)
+            .Select(i => new Product(
+                $"SKU-{i:00}",
+                $"Producto {i:00}",
+                1000m + i,
+                10
+            ))
+            .ToList();
+
+        var repositoryMock = new Mock<IRepository>();
+
+        repositoryMock
+            .Setup(r => r.GetFiltered<Product>(
+                It.IsAny<Expression<Func<Product, bool>>>(),
+                It.IsAny<string[]>()))
+            .ReturnsAsync((
+                Expression<Func<Product, bool>> predicate,
+                string[] include) =>
+                products.Where(predicate.Compile()).ToList());
+
+        var service = new ProductsManagementService(
+            repositoryMock.Object,
+            NullLogger<ProductsManagementService>.Instance
+        );
+
+        var filter = new ProductModel.FilterProduct(
+            Status: null,
+            Search: null,
+            PageNumber: 2,
+            PageSize: 5
+        );
+
+        // ACT
+        var result = await service.GetProducts(filter);
+
+        // ASSERT
+        Assert.Equal(15, result.Total);
+        Assert.Equal(5, result.ProductItems.Count);
+
+        Assert.Equal(
+            new[]
+            {
+            "Producto 06",
+            "Producto 07",
+            "Producto 08",
+            "Producto 09",
+            "Producto 10"
+            },
+            result.ProductItems.Select(p => p.Name).ToArray()
+        );
+
+        repositoryMock.Verify(
+            r => r.GetFiltered<Product>(
+                It.IsAny<Expression<Func<Product, bool>>>(),
+                It.IsAny<string[]>()),
+            Times.Once
+        );
+    }
+
+
+    [Fact]
+    public async Task GetProducts_WithSearchTerm_FiltersByNameSkuOrInternalCode()
+    {
+        // ARRANGE: preparar productos con diferentes nombres y códigos
+        var products = new List<Product>
+    {
+        new Product(
+            "SKU-001",
+            "Mouse Gamer",
+            15000m,
+            10,
+            internalCode: "INT-001"
+        ),
+        new Product(
+            "SKU-002",
+            "Teclado Mecánico",
+            25000m,
+            5,
+            internalCode: "INT-002"
+        ),
+        new Product(
+            "SKU-003",
+            "Monitor LED",
+            100000m,
+            3,
+            internalCode: "INT-003"
+        )
+    };
+
+        var repositoryMock = new Mock<IRepository>();
+
+        repositoryMock
+            .Setup(r => r.GetFiltered<Product>(
+                It.IsAny<Expression<Func<Product, bool>>>(),
+                It.IsAny<string[]>()))
+            .ReturnsAsync((
+                Expression<Func<Product, bool>> predicate,
+                string[] include) =>
+                products.Where(predicate.Compile()).ToList());
+
+        var service = new ProductsManagementService(
+            repositoryMock.Object,
+            NullLogger<ProductsManagementService>.Instance
+        );
+
+        var filter = new ProductModel.FilterProduct(
+            Status: null,
+            Search: "mouse",
+            PageNumber: 1,
+            PageSize: 10
+        );
+
+        // ACT: realizar la búsqueda
+        var result = await service.GetProducts(filter);
+
+        // ASSERT: debe encontrar Mouse Gamer sin distinguir mayúsculas
+        Assert.Single(result.ProductItems);
+        Assert.Equal("Mouse Gamer", result.ProductItems[0].Name);
+        Assert.Equal(1, result.Total);
+    }
+
 }
