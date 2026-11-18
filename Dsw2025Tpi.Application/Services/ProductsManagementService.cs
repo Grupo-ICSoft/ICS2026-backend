@@ -1,4 +1,4 @@
-﻿using Dsw2025Tpi.Application.Dtos;
+using Dsw2025Tpi.Application.Dtos;
 using Dsw2025Tpi.Domain.Interfaces;
 using Dsw2025Tpi.Domain.Entities;
 using Dsw2025Tpi.Application.Exceptions;
@@ -100,21 +100,17 @@ namespace Dsw2025Tpi.Application.Services
             }
 
             var filteredProducts = await _repository.GetFiltered<Product>(p =>
-
                 (includeInactive || p.IsActive)
-
                 &&
-
-
                 (!isActiveFilter.HasValue || p.IsActive == isActiveFilter.Value)
-
                 &&
-
-
                 (string.IsNullOrEmpty(filter.Search)
-                    || (p.Name != null && p.Name.Contains(filter.Search))
-                    || (p.InternalCode != null && p.InternalCode.Contains(filter.Search))
-                    || (p.Sku != null && p.Sku.Contains(filter.Search))
+                    || (p.Name != null &&
+                        p.Name.ToLower().Contains(filter.Search.ToLower()))
+                    || (p.InternalCode != null &&
+                        p.InternalCode.ToLower().Contains(filter.Search.ToLower()))
+                    || (p.Sku != null &&
+                        p.Sku.ToLower().Contains(filter.Search.ToLower()))
                 )
             );
 
