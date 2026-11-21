@@ -75,12 +75,24 @@ public class Program
 
         builder.Services.AddHealthChecks();
 
-        builder.Services.AddDbContext<AuthenticateContext>(options =>
+        if (builder.Environment.IsEnvironment("Testing"))
         {
-            options.UseSqlServer(
-                builder.Configuration.GetConnectionString("Dsw2025TpiEntities"),
-                sqlOptions => sqlOptions.EnableRetryOnFailure());
-        });
+            builder.Services.AddDbContext<AuthenticateContext>(options =>
+            {
+                options.UseSqlite(
+                    builder.Configuration.GetConnectionString("AuthenticateConnection")
+                    ?? "Data Source=auth.db");
+            });
+        }
+        else
+        {
+            builder.Services.AddDbContext<AuthenticateContext>(options =>
+            {
+                options.UseSqlServer(
+                    builder.Configuration.GetConnectionString("Dsw2025TpiEntities"),
+                    sqlOptions => sqlOptions.EnableRetryOnFailure());
+            });
+        }
 
         // --- AQU EST EL CAMBIO ---
         builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
@@ -121,10 +133,22 @@ public class Program
             });
 
 
-        builder.Services.AddDbContext<Dsw2025TpiContext>(options =>
-         {
-             options.UseSqlServer(builder.Configuration.GetConnectionString("Dsw2025TpiEntities"), sqlOptions => sqlOptions.EnableRetryOnFailure());
-         });
+        if (builder.Environment.IsEnvironment("Testing"))
+        {
+            builder.Services.AddDbContext<Dsw2025TpiContext>(options =>
+            {
+                options.UseSqlite(
+                    builder.Configuration.GetConnectionString("Dsw2025TpiEntities")
+                    ?? "Data Source=entities.db");
+            });
+        }
+        else
+        {
+            builder.Services.AddDbContext<Dsw2025TpiContext>(options =>
+            {
+                options.UseSqlServer(builder.Configuration.GetConnectionString("Dsw2025TpiEntities"), sqlOptions => sqlOptions.EnableRetryOnFailure());
+            });
+        }
 
 
         builder.Services.AddSingleton<JwtTokenService>();
@@ -156,10 +180,18 @@ public class Program
             try
             {
                 var authContext = services.GetRequiredService<AuthenticateContext>();
-                authContext.Database.Migrate();
-
                 var context = services.GetRequiredService<Dsw2025TpiContext>();
-                context.Database.Migrate();
+
+                if (app.Environment.IsEnvironment("Testing"))
+                {
+                    authContext.Database.EnsureCreated();
+                    context.Database.EnsureCreated();
+                }
+                else
+                {
+                    authContext.Database.Migrate();
+                    context.Database.Migrate();
+                }
 
                 var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
                 var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
