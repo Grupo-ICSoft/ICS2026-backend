@@ -36,7 +36,6 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Dsw2025Tpi.Api.
             {
                 ["ConnectionStrings:AuthenticateConnection"] = $"Data Source={_authDbPath}",
                 ["ConnectionStrings:Dsw2025TpiEntities"] = $"Data Source={_entitiesDbPath}",
-                ["Jwt:Key"] = "ClaveSuperSecretaDePruebaParaTestingConAlMenos32Caracteres!",
                 ["Jwt:Issuer"] = "Dsw2025Tpi",
                 ["Jwt:Audience"] = "Dsw2025TpiUsers"
             };
