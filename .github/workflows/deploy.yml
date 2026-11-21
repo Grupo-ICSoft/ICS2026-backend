@@ -31,7 +31,25 @@ jobs:
 
       - name: Compilar en Release
         run: dotnet build Dsw2025Tpi.sln -c Release --no-restore
+  tests:
+    name: Tests
+    needs: build-and-lint
+    runs-on: ubuntu-latest
 
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar SDK de .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restaurar dependencias
+        run: dotnet restore Dsw2025Tpi.sln
+
+      - name: Ejecutar pruebas
+        run: dotnet test Dsw2025Tpi.sln -c Release --no-restore --verbosity minimal
   docker-and-deploy:
     name: Docker y Deploy
     needs: build-and-lint
