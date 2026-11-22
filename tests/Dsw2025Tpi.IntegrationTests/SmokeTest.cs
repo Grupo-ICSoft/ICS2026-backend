@@ -26,7 +26,8 @@ public class SmokeTests
         var body = await response.Content.ReadAsStringAsync();
 
         // Assert
-        Assert.True(response.StatusCode == HttpStatusCode.OK, $"Falló el login ({response.StatusCode}): {body}");
+        //Assert.True(response.StatusCode == HttpStatusCode.OK, $"Falló el login ({response.StatusCode}): {body}");
+        Assert.True(response.StatusCode == HttpStatusCode.BadRequest, $"Demo de bloqueo ({response.StatusCode}): {body}");
 
         using var doc = JsonDocument.Parse(body);
         Assert.True(doc.RootElement.TryGetProperty("token", out var tokenElement));
