@@ -31,11 +31,10 @@ jobs:
 
       - name: Compilar en Release
         run: dotnet build Dsw2025Tpi.sln -c Release --no-restore
-  tests:
-    name: Tests
-    needs: build-and-lint
-    runs-on: ubuntu-latest
 
+  run-tests:
+    name: Tests
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
@@ -48,12 +47,29 @@ jobs:
       - name: Restaurar dependencias
         run: dotnet restore Dsw2025Tpi.sln
 
-      - name: Ejecutar pruebas
-        run: dotnet test Dsw2025Tpi.sln -c Release --no-restore --verbosity minimal
+      - name: Ejecutar pruebas (Unit + Integration)
+        id: dotnet-test
+        continue-on-error: true
+        run: |
+          dotnet test Dsw2025Tpi.sln -c Release --no-restore --logger "trx;LogFileName=test-results.trx" --results-directory ./TestResults
+
+      - name: Subir resultados .trx como artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-trx
+          path: ./TestResults/**/*.trx
+          if-no-files-found: warn
+
+      - name: Notificar fallo en pruebas (Quality Gate)
+        if: steps.dotnet-test.outcome == 'failure'
+        run: |
+          echo "::error title=Quality Gate Fallido::Una o más pruebas fallaron. Se bloquea el build de Docker y el despliegue a Azure."
+          exit 1
+
   docker-and-deploy:
     name: Docker y Deploy
-    needs: build-and-lint
-    if: github.event_name != 'pull_request'
+    needs: [build-and-lint, run-tests]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -68,6 +84,7 @@ jobs:
           echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
       - name: Autenticar en GHCR
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -83,16 +100,17 @@ jobs:
             type=sha,format=long
             type=raw,value=latest
 
-      - name: Construir y publicar imagen Docker en GHCR
+      - name: Construir imagen Docker (y publicar solo en push)
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
       - name: Desplegar en Azure App Service
+        if: github.event_name != 'pull_request'
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ secrets.APP_SERVICE_NAME || vars.AZURE_WEBAPP_NAME || 'ics2026-api' }}
