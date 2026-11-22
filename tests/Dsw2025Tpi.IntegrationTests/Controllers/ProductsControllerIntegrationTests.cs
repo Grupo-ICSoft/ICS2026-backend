@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Net;
 using System.Net.Http.Json;
 using Dsw2025Tpi.Data;
@@ -187,5 +188,163 @@ public class ProductsControllerIntegrationTests
         Assert.Equal(originalProduct.InternalCode, productAfterRequest.InternalCode);
         Assert.Equal(originalProduct.CurrentUnitPrice, productAfterRequest.CurrentUnitPrice);
         Assert.Equal(originalProduct.StockQuantity, productAfterRequest.StockQuantity);
+    }
+
+    [Fact]
+    public async Task GetProducts_PublicEndpoint_ReturnsOkWithPaginatedJsonStructure()
+    {
+        // Arrange
+        var suffix = Guid.NewGuid().ToString("N");
+        var sku = $"TP407-PUBLIC-{suffix}";
+
+        await ApiHelpers.SeedProductAsync(
+            _factory,
+            sku,
+            $"Producto público {suffix}");
+
+        using var client = _factory.CreateClient();
+
+        // Act - Consulta pública, sin token
+        var response = await client.GetAsync(
+            $"/api/products?search={Uri.EscapeDataString(sku)}&pageNumber=1&pageSize=10");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        using var document = JsonDocument.Parse(
+            await response.Content.ReadAsStringAsync());
+
+        var root = document.RootElement;
+        var productItems = root.GetProperty("productItems");
+
+        Assert.Equal(JsonValueKind.Array, productItems.ValueKind);
+        Assert.True(root.GetProperty("total").GetInt32() >= 1);
+
+        Assert.Contains(
+            productItems.EnumerateArray(),
+            item => item.GetProperty("sku").GetString() == sku);
+    }
+
+    [Fact]
+    public async Task GetProducts_WithQueryStringFilters_ReturnsFilteredResultsFromSqlite()
+    {
+        // Arrange
+        var suffix = Guid.NewGuid().ToString("N");
+
+        var firstSku = $"TP407-MOUSE-A-{suffix}";
+        var secondSku = $"TP407-MOUSE-B-{suffix}";
+        var keyboardSku = $"TP407-KEYBOARD-{suffix}";
+
+        await ApiHelpers.SeedProductAsync(
+            _factory, firstSku, $"Mouse-{suffix}-A");
+
+        await ApiHelpers.SeedProductAsync(
+            _factory, secondSku, $"mouse-{suffix}-B");
+
+        await ApiHelpers.SeedProductAsync(
+            _factory, keyboardSku, $"Teclado-{suffix}");
+
+        using var client = _factory.CreateClient();
+
+        // Act - Buscar Mouse sin distinguir mayúsculas y minúsculas
+        var searchTerm = $"MOUSE-{suffix}";
+
+        var response = await client.GetAsync(
+            $"/api/products?search={Uri.EscapeDataString(searchTerm)}&pageNumber=1&pageSize=10");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        using var document = JsonDocument.Parse(
+            await response.Content.ReadAsStringAsync());
+
+        var root = document.RootElement;
+        var productItems = root.GetProperty("productItems");
+
+        Assert.Equal(JsonValueKind.Array, productItems.ValueKind);
+        Assert.Equal(2, root.GetProperty("total").GetInt32());
+        Assert.Equal(2, productItems.GetArrayLength());
+
+        Assert.Contains(
+            productItems.EnumerateArray(),
+            item => item.GetProperty("sku").GetString() == firstSku);
+
+        Assert.Contains(
+            productItems.EnumerateArray(),
+            item => item.GetProperty("sku").GetString() == secondSku);
+
+        Assert.DoesNotContain(
+            productItems.EnumerateArray(),
+            item => item.GetProperty("sku").GetString() == keyboardSku);
+    }
+
+    [Fact]
+    public async Task GetAuthProducts_AdminEndpoint_WhenCalledByAdmin_IncludesInactiveProducts()
+    {
+        // Arrange
+        var suffix = Guid.NewGuid().ToString("N");
+
+        var activeSku = $"TP407-ADMIN-ACTIVE-{suffix}";
+        var inactiveSku = $"TP407-ADMIN-INACTIVE-{suffix}";
+        var searchTerm = $"TP407-ADMIN-{suffix}";
+
+        await ApiHelpers.SeedProductAsync(
+            _factory,
+            activeSku,
+            $"TP407-ADMIN-{suffix}-Activo",
+            isActive: true);
+
+        await ApiHelpers.SeedProductAsync(
+            _factory,
+            inactiveSku,
+            $"TP407-ADMIN-{suffix}-Inactivo",
+            isActive: false);
+
+        // Act - Consulta administrativa con token de Admin
+        using var adminClient = _factory.CreateClient();
+
+        var adminToken = await ApiHelpers.GetAdminTokenAsync(adminClient);
+        ApiHelpers.SetBearerToken(adminClient, adminToken);
+
+        var adminResponse = await adminClient.GetAsync(
+            $"/api/products/admin?search={Uri.EscapeDataString(searchTerm)}&pageNumber=1&pageSize=10");
+
+        // Assert - El administrador ve ambos productos
+        Assert.Equal(HttpStatusCode.OK, adminResponse.StatusCode);
+
+        using var adminDocument = JsonDocument.Parse(
+            await adminResponse.Content.ReadAsStringAsync());
+
+        var adminItems = adminDocument.RootElement.GetProperty("productItems");
+
+        Assert.Contains(
+            adminItems.EnumerateArray(),
+            item => item.GetProperty("sku").GetString() == activeSku);
+
+        Assert.Contains(
+            adminItems.EnumerateArray(),
+            item => item.GetProperty("sku").GetString() == inactiveSku);
+
+        // Act - Consulta pública sin token
+        using var publicClient = _factory.CreateClient();
+
+        var publicResponse = await publicClient.GetAsync(
+            $"/api/products?search={Uri.EscapeDataString(searchTerm)}&pageNumber=1&pageSize=10");
+
+        // Assert - El público ve el activo, pero no el inactivo
+        Assert.Equal(HttpStatusCode.OK, publicResponse.StatusCode);
+
+        using var publicDocument = JsonDocument.Parse(
+            await publicResponse.Content.ReadAsStringAsync());
+
+        var publicItems = publicDocument.RootElement.GetProperty("productItems");
+
+        Assert.Contains(
+            publicItems.EnumerateArray(),
+            item => item.GetProperty("sku").GetString() == activeSku);
+
+        Assert.DoesNotContain(
+            publicItems.EnumerateArray(),
+            item => item.GetProperty("sku").GetString() == inactiveSku);
     }
 }
